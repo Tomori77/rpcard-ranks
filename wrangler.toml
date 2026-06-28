@@ -3,24 +3,6 @@ main = "src/index.js"
 compatibility_date = "2024-10-01"
 compatibility_flags = ["nodejs_compat"]
 
-# D1 数据库
-[[d1_databases]]
-binding = "DB"
-database_name = "rank1"
-database_id = "0903db6f-af56-40e6-a4d4-edd542fc7568"
-
-# KV 缓存
-[[kv_namespaces]]
-binding = "CACHE"
-id = "5e3e004ddae9469fb616f4bcac9161e0"
-
-# R2 图片存储
-[[r2_buckets]]
-binding = "IMAGES"
-bucket_name = "rankr2"
-
-# 所有者后台密码(部署后用 wrangler secret put OWNER_PASSWORD 覆盖)
-# 本地开发可写在 .dev.vars
-[vars]
-OWNER_PASSWORD = "change-me-please"
-SESSION_SECRET = "change-me-session"
+# 所有 D1 / KV / R2 绑定与密钥(OWNER_PASSWORD、SESSION_SECRET)请在
+# Cloudflare Dashboard → Worker → Settings → Bindings / Variables and Secrets
+# 中配置,避免将资源 ID 与密钥提交至仓库。
