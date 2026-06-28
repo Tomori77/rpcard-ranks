@@ -1,0 +1,18 @@
+{
+  "name": "rpcard-ranks",
+  "version": "0.1.0",
+  "private": true,
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:init": "wrangler d1 execute rpcard --file=./schema.sql --remote",
+    "db:local": "wrangler d1 execute rpcard --file=./schema.sql --local"
+  },
+  "dependencies": {
+    "hono": "^4.6.0"
+  },
+  "devDependencies": {
+    "wrangler": "^4.105.0"
+  }
+}

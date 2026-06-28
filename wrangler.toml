@@ -1,0 +1,26 @@
+name = "rpcard-ranks"
+main = "src/index.js"
+compatibility_date = "2024-10-01"
+compatibility_flags = ["nodejs_compat"]
+
+# D1 数据库
+[[d1_databases]]
+binding = "DB"
+database_name = "rpcard"
+database_id = "REPLACE_WITH_D1_ID"
+
+# KV 缓存
+[[kv_namespaces]]
+binding = "CACHE"
+id = "REPLACE_WITH_KV_ID"
+
+# R2 图片存储
+[[r2_buckets]]
+binding = "IMAGES"
+bucket_name = "rpcard-images"
+
+# 所有者后台密码(部署后用 wrangler secret put OWNER_PASSWORD 覆盖)
+# 本地开发可写在 .dev.vars
+[vars]
+OWNER_PASSWORD = "change-me-please"
+SESSION_SECRET = "change-me-session"
