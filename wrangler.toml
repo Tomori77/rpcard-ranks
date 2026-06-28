@@ -6,18 +6,18 @@ compatibility_flags = ["nodejs_compat"]
 # D1 数据库
 [[d1_databases]]
 binding = "DB"
-database_name = "rpcard"
-database_id = "REPLACE_WITH_D1_ID"
+database_name = "rank1"
+database_id = "0903db6f-af56-40e6-a4d4-edd542fc7568"
 
 # KV 缓存
 [[kv_namespaces]]
 binding = "CACHE"
-id = "REPLACE_WITH_KV_ID"
+id = "5e3e004ddae9469fb616f4bcac9161e0"
 
 # R2 图片存储
 [[r2_buckets]]
 binding = "IMAGES"
-bucket_name = "rpcard-images"
+bucket_name = "rankr2"
 
 # 所有者后台密码(部署后用 wrangler secret put OWNER_PASSWORD 覆盖)
 # 本地开发可写在 .dev.vars
