@@ -29,7 +29,15 @@ document.getElementById('go').onclick = async () => {
   err.textContent='';
   if (!username || !password || !code){ alert('请填写完整'); return; }
   const fp = await window.FP();
-  const r = await (await fetch('/api/register', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password,code,fingerprint:fp})})).json();
+  let r;
+  try {
+    const res = await fetch('/api/register', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password,code,fingerprint:fp})});
+    const text = await res.text();
+    try { r = JSON.parse(text); } catch { alert('注册失败\\n\\nHTTP ' + res.status + '\\n' + text.slice(0,300)); return; }
+    if (!res.ok && !r.err){ alert('注册失败\\n\\nHTTP ' + res.status + '\\n' + text.slice(0,300)); return; }
+  } catch (e) {
+    alert('注册失败\\n\\n网络错误: ' + e.message); return;
+  }
   if (r.ok){
     toast('注册成功,角色: '+r.role, 1500);
     setTimeout(()=> location.href='/admin', 900);

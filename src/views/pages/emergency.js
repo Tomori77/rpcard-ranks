@@ -24,7 +24,15 @@ document.getElementById('go').onclick = async () => {
   const err = document.getElementById('err');
   err.textContent='';
   if (!username || !password){ alert('请填写用户名和 OWNER_PASSWORD'); return; }
-  const r = await (await fetch('/api/emergency', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password})})).json();
+  let r;
+  try {
+    const res = await fetch('/api/emergency', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password})});
+    const text = await res.text();
+    try { r = JSON.parse(text); } catch { alert('应急登录失败\\n\\nHTTP ' + res.status + '\\n' + text.slice(0,300)); return; }
+    if (!res.ok && !r.err){ alert('应急登录失败\\n\\nHTTP ' + res.status + '\\n' + text.slice(0,300)); return; }
+  } catch (e) {
+    alert('应急登录失败\\n\\n网络错误: ' + e.message); return;
+  }
   if (r.ok){ toast('已重置并登录', 1000); setTimeout(()=> location.href='/admin', 700); }
   else {
     const map = {
