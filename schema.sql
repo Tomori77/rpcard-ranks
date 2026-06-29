@@ -36,15 +36,26 @@ CREATE TABLE IF NOT EXISTS reviews (
   FOREIGN KEY (card_id) REFERENCES cards(id) ON DELETE CASCADE
 );
 
--- 用户(浏览器指纹追踪)
+-- 用户(账号密码 + 浏览器指纹)
 -- role: owner / admin / user
+-- username/password_hash/salt: 注册用户(需邀请码)拥有
+-- fingerprint: 所有用户都有(匿名用户只有这个); 也可以为空字符串,UNIQUE 允许多个 NULL/空
+-- 注意 SQLite 中 UNIQUE 列对 NULL 视为不同,这里用空字符串给匿名用户的指纹留位置
 CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  fingerprint TEXT NOT NULL UNIQUE,
+  username TEXT UNIQUE,               -- 登录账号,匿名用户为 NULL
+  password_hash TEXT,                  -- PBKDF2 哈希(包含 salt)
+  fingerprint TEXT,                    -- 浏览器指纹(点赞去重); 匿名用户必填,注册用户也填
   role TEXT NOT NULL DEFAULT 'user',
   invite_code TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+CREATE INDEX IF NOT EXISTS idx_users_fp ON users(fingerprint);
+
+-- 老库迁移:如已部署过早期 schema,执行下面三行添加新列(SQLite 不支持 IF NOT EXISTS on ALTER)
+-- ALTER TABLE users ADD COLUMN username TEXT;
+-- ALTER TABLE users ADD COLUMN password_hash TEXT;
+-- 然后用所有者登录后,后台"用户"标签中手动改角色
 
 -- 用户对卡的点赞(指纹去重)
 CREATE TABLE IF NOT EXISTS likes (
