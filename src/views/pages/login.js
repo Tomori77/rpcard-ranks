@@ -24,7 +24,7 @@ document.getElementById('go').onclick = async () => {
   const password = document.getElementById('password').value;
   const err = document.getElementById('err');
   err.textContent='';
-  if (!username || !password){ err.textContent='请输入用户名和密码'; return; }
+  if (!username || !password){ alert('请输入用户名和密码'); return; }
   const r = await (await fetch('/api/login', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password})})).json();
   if (r.ok){ toast('登录成功', 900); setTimeout(()=> location.href="${safeNext}", 700); }
   else {
@@ -33,7 +33,7 @@ document.getElementById('go').onclick = async () => {
       no_backend_access:'该账号无后台访问权限(普通用户)',
       missing:'请输入用户名和密码',
     };
-    err.textContent = map[r.err] || r.err || '失败';
+    alertErr(map, r.err, '登录失败');
     if (r.err === 'no_backend_access'){ setTimeout(()=> location.href='/', 1600); }
   }
 };

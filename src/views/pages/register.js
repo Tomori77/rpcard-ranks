@@ -27,7 +27,7 @@ document.getElementById('go').onclick = async () => {
   const code = document.getElementById('code').value.trim();
   const err = document.getElementById('err');
   err.textContent='';
-  if (!username || !password || !code){ err.textContent='请填写完整'; return; }
+  if (!username || !password || !code){ alert('请填写完整'); return; }
   const fp = await window.FP();
   const r = await (await fetch('/api/register', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password,code,fingerprint:fp})})).json();
   if (r.ok){
@@ -41,7 +41,7 @@ document.getElementById('go').onclick = async () => {
       fp_registered:'此设备已注册过账号,一个指纹仅可注册一个账号',
       owner_exists:'所有者账号已存在(系统仅允许一个所有者)',
     };
-    err.textContent = map[r.err] || r.err || '失败';
+    alertErr(map, r.err, '注册失败');
   }
 };
 document.getElementById('toLogin').onclick = ()=> location.href='/login';

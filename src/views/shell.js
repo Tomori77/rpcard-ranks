@@ -161,6 +161,11 @@ window.toast = (msg, ms=2000) => {
   const t = document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t);
   setTimeout(()=>t.remove(), ms);
 };
+// 错误弹窗:优先显示中文映射,失败时附原始 err code 便于诊断
+window.alertErr = (map, err, prefix='操作失败') => {
+  const zh = map[err] || err || '未知错误';
+  alert(prefix + '\\n\\n' + zh + (err && !map[err] ? '' : (err ? '\\n[err: ' + err + ']' : '')));
+};
 window.imgUrl = (key) => '/api/img?key=' + encodeURIComponent(key);
 window.esc = (s) => String(s==null?'':s).replace(/</g,'&lt;');
 (async () => {

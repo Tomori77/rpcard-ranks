@@ -23,7 +23,7 @@ document.getElementById('go').onclick = async () => {
   const password = document.getElementById('password').value;
   const err = document.getElementById('err');
   err.textContent='';
-  if (!username || !password){ err.textContent='请填写用户名和 OWNER_PASSWORD'; return; }
+  if (!username || !password){ alert('请填写用户名和 OWNER_PASSWORD'); return; }
   const r = await (await fetch('/api/emergency', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password})})).json();
   if (r.ok){ toast('已重置并登录', 1000); setTimeout(()=> location.href='/admin', 700); }
   else {
@@ -33,7 +33,7 @@ document.getElementById('go').onclick = async () => {
       no_owner_secret:'服务端未配置 OWNER_PASSWORD',
       missing:'请填写完整',
     };
-    err.textContent = map[r.err] || r.err || '失败';
+    alertErr(map, r.err, '应急登录失败');
   }
 };
 document.getElementById('toLogin').onclick = ()=> location.href='/login';
