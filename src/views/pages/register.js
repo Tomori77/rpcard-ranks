@@ -39,8 +39,17 @@ document.getElementById('go').onclick = async () => {
     alert('注册失败\\n\\n网络错误: ' + e.message); return;
   }
   if (r.ok){
-    toast('注册成功,角色: '+r.role, 1500);
-    setTimeout(()=> location.href='/admin', 900);
+    // 验证 session 是否真的生效
+    const me = await (await fetch('/api/me', {credentials:'same-origin'})).json().catch(()=>({ok:false}));
+    if (me.ok && me.role){
+      toast('注册成功,角色: ' + me.role, 1500);
+      if (window.refreshWhoami) window.refreshWhoami();
+      // admin/owner 进后台,普通用户进排行首页
+      const target = (me.role === 'admin' || me.role === 'owner') ? '/admin' : '/';
+      setTimeout(()=> location.href=target, 1000);
+    } else {
+      alert('注册响应成功,但会话未生效\\n\\n可能原因:\\n1. 服务端 SESSION_SECRET 未配置\\n2. 浏览器阻止了 Secure cookie');
+    }
   } else {
     const map = {
       invalid_code:'邀请码无效或已禁用', exhausted:'邀请码已用完', missing:'参数缺失',

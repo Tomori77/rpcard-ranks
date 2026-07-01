@@ -34,7 +34,17 @@ document.getElementById('go').onclick = async () => {
   } catch (e) {
     alert('登录失败\\n\\n网络错误: ' + e.message); return;
   }
-  if (r.ok){ toast('登录成功', 900); setTimeout(()=> location.href="${safeNext}", 700); }
+  if (r.ok){
+    // 验证 session 是否真的生效(cookie 是否被浏览器接受)
+    const me = await (await fetch('/api/me', {credentials:'same-origin'})).json().catch(()=>({ok:false}));
+    if (me.ok && me.role){
+      toast('登录成功,角色: ' + me.role, 1200);
+      if (window.refreshWhoami) window.refreshWhoami();
+      setTimeout(()=> location.href="${safeNext}", 900);
+    } else {
+      alert('登录响应成功,但会话未生效\\n\\n可能原因:\\n1. 服务端 SESSION_SECRET 未配置(去 Cloudflare 面板 Variables and Secrets 添加 Secret 类型 SESSION_SECRET=随机字符串)\\n2. 浏览器阻止了 Secure cookie\\n3. 跨域请求未带 cookie');
+    }
+  }
   else {
     const map = {
       wrong:'用户名或密码错误',

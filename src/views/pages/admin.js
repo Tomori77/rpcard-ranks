@@ -11,7 +11,8 @@ let boards=[], myCards=[], curTab=null, myRole=null;
 
 (async () => {
   const me = await (await fetch('/api/me')).json();
-  if (!me.ok || (me.role !== 'admin' && me.role !== 'owner')){
+  if (!me.ok || !me.role){
+    // 未登录:显示登录入口
     document.getElementById('app').innerHTML =
       '<section class="panel"><h2>登录后台</h2>'+
       '<p class="muted">后台需要管理员或所有者身份。请使用账号密码登录。</p>'+
@@ -21,7 +22,19 @@ let boards=[], myCards=[], curTab=null, myRole=null;
       '</div></section>';
     return;
   }
+  if (me.role === 'user'){
+    // 已登录普通用户:明确提示无权限
+    document.getElementById('app').innerHTML =
+      '<section class="panel"><h2>无后台权限</h2>'+
+      '<p class="muted">你当前是普通用户,只能查看排行榜和点赞。后台仅对管理员和所有者开放。</p>'+
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;">'+
+      '<button class="btn primary" onclick="location.href='+"'"+'/'+"'"+'">返回排行</button>'+
+      '<button class="btn" onclick="location.href='+"'"+'/login?next=/admin'+"'"+'">切换账号</button>'+
+      '</div></section>';
+    return;
+  }
   myRole = me.role;
+  if (window.refreshWhoami) window.refreshWhoami();
   await loadBoards();
   await loadMy();
   renderTabs();

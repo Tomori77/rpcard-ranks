@@ -33,7 +33,16 @@ document.getElementById('go').onclick = async () => {
   } catch (e) {
     alert('应急登录失败\\n\\n网络错误: ' + e.message); return;
   }
-  if (r.ok){ toast('已重置并登录', 1000); setTimeout(()=> location.href='/admin', 700); }
+  if (r.ok){
+    const me = await (await fetch('/api/me', {credentials:'same-origin'})).json().catch(()=>({ok:false}));
+    if (me.ok && me.role === 'owner'){
+      toast('已重置并登录', 1000);
+      if (window.refreshWhoami) window.refreshWhoami();
+      setTimeout(()=> location.href='/admin', 800);
+    } else {
+      alert('应急登录响应成功,但会话未生效\\n\\n请检查服务端 SESSION_SECRET 是否配置');
+    }
+  }
   else {
     const map = {
       wrong:'用户名或 OWNER_PASSWORD 错误',
