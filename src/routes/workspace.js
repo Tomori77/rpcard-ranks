@@ -33,7 +33,8 @@ export default function workspaceRoutes() {
     return json({ ok: true, data: { cards, boards } });
   });
 
-  // å‘å¸ƒæ–°å¡ç‰?  r.post('/workspace/cards', async (c) => {
+  // ·¢²¼ÐÂ¿¨Æ¬
+  r.post('/workspace/cards', async (c) => {
     const { name, image_key, owner_rating, board_id } = await c.req.json();
     if (!name || !image_key) return json({ ok: false, err: 'missing' }, 400);
     if (!RATING_LIST.includes(owner_rating || 'D')) return json({ ok: false, err: 'bad_rating' }, 400);
@@ -57,7 +58,8 @@ export default function workspaceRoutes() {
     return json({ ok: true });
   });
 
-  // å†?æ›´æ–°è‡ªå·±çš„è¯„ä»?  r.put('/cards/:id/review', async (c) => {
+  // Ð´ÆÀ¼Û
+  r.put('/cards/:id/review', async (c) => {
     const { content } = await c.req.json();
     if (!content) return json({ ok: false, err: 'empty' }, 400);
     await db.upsertReview(c.env.d1, c.req.param('id'), uidOf(c), content);
