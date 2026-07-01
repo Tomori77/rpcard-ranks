@@ -6,17 +6,17 @@ export function renderAdmin() {
     title: '后台',
     body: '<div id="app"></div>',
     script: `<script>
-let boards=[], myCards=[], curTab=null;
+let boards=[], myCards=[], curTab=null, presetContent='';
 
 (async () => {
   const key = getAdminKey();
   if (!key){ showLoginForm(); return; }
-  // 验证 localStorage 里的 key 是否有效
   const me = await (await adminFetch('/api/me')).json();
   if (!me.ok || me.role !== 'owner'){ clearAdminKey(); showLoginForm(); return; }
   if (window.refreshWhoami) window.refreshWhoami();
   await loadBoards();
   await loadMy();
+  await loadPreset();
   renderTabs();
 })();
 
@@ -51,10 +51,12 @@ function showLoginForm(){
   };
 }
 
-// ============ 后台主界面 ============
+// ============ 数据加载 ============
 async function loadBoards(){ const r = await (await fetch('/api/boards')).json(); boards = r.data || []; }
 async function loadMy(){ const r = await (await adminFetch('/api/workspace/me')).json(); if (r.ok) myCards = r.data.cards || []; }
+async function loadPreset(){ const r = await (await adminFetch('/api/preset')).json(); if (r.ok) presetContent = r.content || ''; }
 
+// ============ 后台主界面 ============
 function renderTabs(){
   const tabs = ['publish', 'my', 'allcards', 'boards'];
   const labels = { publish:'发布新卡', my:'我的卡片', allcards:'全部卡片', boards:'榜单' };
@@ -75,23 +77,66 @@ function show(tab){
   if (tab==='boards') showBoards();
 }
 
-// ---- 发布新卡 ----
+// ============ 发布新卡(左右布局) ============
 function showPublish(){
   const bidOpts = boards.map(b=>'<option value="'+b.id+'">'+esc(b.name)+'</option>').join('');
   document.getElementById('tab').innerHTML =
   '<section class="panel"><h2>发布新卡片</h2>'+
-    '<label>名称</label><input id="nName" placeholder="角色卡名称">'+
-    '<div class="row" style="gap:12px;">'+
-      '<div style="flex:1;min-width:140px;"><label>官方评级</label><select id="nRating">'+['D','C','B','A','S'].map(x=>'<option>'+x+'</option>').join('')+'</select></div>'+
-      '<div style="flex:2;min-width:140px;"><label>榜单</label><select id="nBoard">'+bidOpts+'</select></div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">'+
+    // 左列:图片选择 + 预览 + 名称 + 评级 + 榜单 + 按钮
+      '<div>'+
+        '<label>选择图片</label><input id="nFile" type="file" accept="image/*">'+
+        '<div id="previewWrap" style="margin:10px 0;display:none;"><img id="previewImg" style="max-width:100%;border-radius:12px;box-shadow:var(--shadow-sm);"></div>'+
+        '<label>名称</label><input id="nName" placeholder="角色卡名称">'+
+        '<div class="row" style="gap:12px;">'+
+          '<div style="flex:1;min-width:120px;"><label>个人评级</label><select id="nRating">'+['D','C','B','A','S'].map(x=>'<option>'+x+'</option>').join('')+'</select></div>'+
+          '<div style="flex:2;min-width:120px;"><label>榜单</label><select id="nBoard">'+bidOpts+'</select></div>'+
+        '</div>'+
+        '<p class="muted">上传前自动压缩到 1080px / 质量 50(加快上传)</p>'+
+        '<p class="err" id="nErr"></p>'+
+        '<button class="btn primary" id="nGo">上传并发布</button>'+
+      '</div>'+
+      // 右列:评论预设 + 评论框
+      '<div>'+
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">'+
+          '<label style="margin:0;">评论预设(自动追加在评论前方)</label>'+
+          '<button class="linkbtn" id="editPreset" style="font-size:12px;">编辑预设</button>'+
+        '</div>'+
+        '<div id="presetBox" style="background:var(--fill);border-radius:10px;padding:12px;min-height:60px;white-space:pre-wrap;font-size:13px;color:var(--text-2);margin-bottom:14px;">'+(presetContent?esc(presetContent):'<span class="muted">未设置预设</span>')+'</div>'+
+        '<label>评论(可选)</label>'+
+        '<textarea id="nReview" placeholder="写你的评论,发布时会自动在前面拼接预设内容" style="min-height:160px;"></textarea>'+
+      '</div>'+
     '</div>'+
-    '<label>图片</label><input id="nFile" type="file" accept="image/*">'+
-    '<p class="muted">上传前自动压缩到 1080px / 质量 85</p>'+
-    '<p class="err" id="nErr"></p>'+
-    '<button class="btn primary" id="nGo">上传并发布</button>'+
   '</section>';
   document.getElementById('nGo').onclick = onPublish;
+  document.getElementById('editPreset').onclick = editPreset;
+
+  // 选文件后:自动填名 + 显示预览
+  document.getElementById('nFile').onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    // 自动填名称(去扩展名)
+    const baseName = file.name.replace(/\\.[^.]+$/, '');
+    if (!document.getElementById('nName').value) document.getElementById('nName').value = baseName;
+    // 预览
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      document.getElementById('previewImg').src = ev.target.result;
+      document.getElementById('previewWrap').style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  };
 }
+
+function editPreset(){
+  const v = prompt('编辑评论预设(发布时自动追加在评论前方)', presetContent);
+  if (v === null) return;
+  presetContent = v;
+  fetch('/api/preset', {method:'PUT',headers:{'Content-Type':'application/json','X-Admin-Key':getAdminKey()},body:JSON.stringify({content:v})}).then(r=>r.json()).then(r=>{
+    if (r.ok){ toast('预设已保存'); showPublish(); } else toast(r.err||'失败');
+  });
+}
+
 async function compress(file){
   const img = await createImageBitmap(file);
   const max = 1080;
@@ -99,13 +144,15 @@ async function compress(file){
   if (w>max || h>max){ const k=Math.min(max/w, max/h); w=Math.round(w*k); h=Math.round(h*k); }
   const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
   cv.getContext('2d').drawImage(img,0,0,w,h);
-  const blob = await new Promise(res=>cv.toBlob(res,'image/jpeg',0.85));
+  const blob = await new Promise(res=>cv.toBlob(res,'image/jpeg',0.5));
   return new File([blob], 'card.jpg', {type:'image/jpeg'});
 }
+
 async function onPublish(){
   const name = document.getElementById('nName').value.trim();
   const rating = document.getElementById('nRating').value;
   const board = parseInt(document.getElementById('nBoard').value,10);
+  const review = document.getElementById('nReview').value;
   const fInput = document.getElementById('nFile');
   const nErr = document.getElementById('nErr');
   if (!name || !fInput.files.length){ nErr.textContent='名称和图片必填'; return; }
@@ -114,12 +161,19 @@ async function onPublish(){
   const fd = new FormData(); fd.append('file', comp);
   const up = await (await adminFetch('/api/upload',{method:'POST',body:fd})).json();
   if (!up.ok){ nErr.textContent='图片上传失败: '+up.err; return; }
-  const r = await (await adminFetch('/api/workspace/cards',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,image_key:up.key,owner_rating:rating,board_id:board})})).json();
-  if (r.ok){ toast('已发布'); fInput.value=''; document.getElementById('nName').value=''; await loadMy(); if (curTab==='my') showMy(); }
-  else nErr.textContent=r.err;
+  const r = await (await adminFetch('/api/workspace/cards',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,image_key:up.key,owner_rating:rating,board_id:board,review})})).json();
+  if (r.ok){
+    toast('已发布');
+    fInput.value='';
+    document.getElementById('nName').value='';
+    document.getElementById('nReview').value='';
+    document.getElementById('previewWrap').style.display='none';
+    await loadMy();
+    if (curTab==='my') showMy();
+  } else nErr.textContent=r.err;
 }
 
-// ---- 我的卡片 ----
+// ============ 我的卡片(textarea 拉长) ============
 function showMy(){
   document.getElementById('tab').innerHTML =
   '<section class="panel"><h2>我的卡片</h2>'+
@@ -128,7 +182,7 @@ function showMy(){
       const rev = c.my_review||'';
       return '<tr><td>'+c.id+'</td><td><img src="'+imgUrl(c.image_key)+'" style="width:44px;height:58px;object-fit:cover;border-radius:8px;"></td>'+
         '<td id="n_'+c.id+'">'+esc(c.name)+'</td><td><span class="rating rating-'+c.owner_rating+'">'+c.owner_rating+'</span></td>'+
-        '<td>'+c.like_count+'</td><td><textarea id="rv_'+c.id+'" placeholder="你的评价">'+esc(rev)+'</textarea></td>'+
+        '<td>'+c.like_count+'</td><td><textarea id="rv_'+c.id+'" placeholder="你的评价" style="min-height:120px;">'+esc(rev)+'</textarea></td>'+
         '<td><div style="display:flex;gap:6px;flex-wrap:wrap;"><button class="btn" data-act="edit" data-id="'+c.id+'">改</button><button class="btn" data-act="rev" data-id="'+c.id+'">存评价</button></div></td></tr>';
     }).join('') : '<tr><td colspan="7" class="muted">还没有卡片,在"发布新卡"标签里发一张</td></tr>')+
     '</table></section>';
@@ -150,16 +204,16 @@ async function saveReview(id){
   if (r.ok) toast('评价已保存'); else toast(r.err||'失败');
 }
 
-// ---- 全部卡片 ----
+// ============ 全部卡片 ============
 async function showAllCards(){
   const r = await (await adminFetch('/api/admin/cards')).json();
   if (!r.ok){ document.getElementById('tab').innerHTML='<p class="err">'+r.err+'</p>'; return; }
-  document.getElementById('tab').innerHTML = '<section class="panel"><table><tr><th>ID</th><th>榜</th><th>图</th><th>名称</th><th>官方评级</th><th>赞</th><th>评价</th><th>操作</th></tr>'+
+  document.getElementById('tab').innerHTML = '<section class="panel"><table><tr><th>ID</th><th>榜</th><th>图</th><th>名称</th><th>个人评级</th><th>赞</th><th>评价</th><th>操作</th></tr>'+
     (r.data.length? r.data.map(c=>'<tr><td>'+c.id+'</td><td>'+esc(c.board_name)+'</td><td><img src="'+imgUrl(c.image_key)+'" style="width:36px;height:48px;object-fit:cover;border-radius:6px;"></td><td>'+esc(c.name)+'</td><td><span class="rating rating-'+c.owner_rating+'">'+c.owner_rating+'</span></td><td>'+c.like_count+'</td><td>'+c.review_count+'</td><td><button class="btn danger" data-del="'+c.id+'">删</button></td></tr>').join('') : '<tr><td colspan="8" class="muted">还没有卡片</td></tr>')+'</table></section>';
   document.querySelectorAll('[data-del]').forEach(b=> b.onclick=async()=>{ if(!confirm('删除卡片?此操作不可撤销'))return; await adminFetch('/api/cards/'+b.dataset.del,{method:'DELETE'}); showAllCards(); });
 }
 
-// ---- 榜单 ----
+// ============ 榜单 ============
 async function showBoards(){
   const r = await (await fetch('/api/boards')).json();
   document.getElementById('tab').innerHTML =

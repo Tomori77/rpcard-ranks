@@ -1,4 +1,4 @@
-// 卡片详情:图 + 官方评级 + 点赞 toggle + 用户评级分布 + 多评价
+// 卡片详情:图 + 个人评级 + 点赞 toggle + 用户评级分布 + 多评价
 
 export function renderCard({ id }) {
   return {
@@ -48,7 +48,7 @@ async function load() {
       '<div>'+
         '<h2 style="margin-top:0;">'+esc(c.name)+'</h2>'+
         '<div style="display:flex;align-items:center;gap:14px;margin:10px 0;">'+
-          '<span class="rating rating-'+c.owner_rating+'">官方 '+c.owner_rating+'</span>'+
+          '<span class="rating rating-'+c.owner_rating+'">个人 '+c.owner_rating+'</span>'+
           '<span class="muted">♥ '+r.data.likeCount+' 赞</span>'+
         '</div>'+
         '<div style="margin:18px 0;">'+
