@@ -160,18 +160,27 @@ window.toast = (msg, ms=2000) => {
 };
 window.imgUrl = (key) => '/api/img?key=' + encodeURIComponent(key);
 window.esc = (s) => String(s==null?'':s).replace(/</g,'&lt;');
+// ADMIN_KEY 存 localStorage,每次 admin API 请求带 X-Admin-Key header
+window.getAdminKey = () => localStorage.getItem('rpcard_admin_key') || '';
+window.setAdminKey = (k) => localStorage.setItem('rpcard_admin_key', k);
+window.clearAdminKey = () => localStorage.removeItem('rpcard_admin_key');
+// 带 admin key 的 fetch 封装
+window.adminFetch = (url, opts={}) => {
+  const headers = Object.assign({}, opts.headers || {}, { 'X-Admin-Key': getAdminKey() });
+  return fetch(url, Object.assign({}, opts, { headers }));
+};
 window.refreshWhoami = async () => {
   const el = document.getElementById('whoami');
   if (!el) return;
-  let r;
-  try { r = await (await fetch('/api/me', {credentials:'same-origin'})).json(); } catch { r = {ok:false}; }
-  if (!r.ok){ el.innerHTML = '<a href="/login" class="muted">登录</a>'; return; }
-  if (r.role === 'owner') el.innerHTML = '所有者 · <button class="linkbtn" id="hdrLogout">退出</button>';
-  else if (r.role === 'admin') el.innerHTML = '管理员 · <button class="linkbtn" id="hdrLogout">退出</button>';
-  else if (r.role === 'user') el.innerHTML = '已登录 · <button class="linkbtn" id="hdrLogout">退出</button>';
-  else el.innerHTML = '<a href="/login" class="muted">登录</a>';
+  const key = getAdminKey();
+  if (!key){ el.innerHTML = ''; return; }
+  try {
+    const r = await (await adminFetch('/api/me')).json();
+    if (r.ok && r.role === 'owner') el.innerHTML = '所有者 · <button class="linkbtn" id="hdrLogout">退出</button>';
+    else el.innerHTML = '';
+  } catch { el.innerHTML = ''; }
   const lg = document.getElementById('hdrLogout');
-  if (lg) lg.onclick = async () => { await fetch('/api/logout',{method:'POST'}); await refreshWhoami(); if (location.pathname.startsWith('/admin')) location.href='/'; };
+  if (lg) lg.onclick = () => { clearAdminKey(); refreshWhoami(); if (location.pathname.startsWith('/admin')) location.reload(); };
 };
 refreshWhoami();
 `;

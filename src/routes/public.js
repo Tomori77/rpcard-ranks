@@ -1,32 +1,31 @@
 // 公开 API:不需要登录的端点(me/boards/ranking/cards/like/rate/img)
+// /api/me 通过 X-Admin-Key header 判断是否所有者
 
 import { Hono } from 'hono';
 import { json } from '../core/http.js';
 import * as db from '../core/db.js';
 import * as storage from '../core/storage.js';
 import { withCache, bustRanking } from '../core/cache.js';
-import { sessionMiddleware } from '../middleware.js';
+import { isAdmin } from '../middleware.js';
 
 const RATING_LIST = ['D', 'C', 'B', 'A', 'S'];
 
 export default function publicRoutes() {
   const r = new Hono();
-  r.use('*', sessionMiddleware);
 
-  // 当前会话
-  r.get('/me', (c) => {
-    const s = c.get('session');
-    if (!s) return json({ ok: true, role: null });
-    return json({ ok: true, role: s.role, uid: s.uid, username: s.username || null });
+  // 当前会话:通过 X-Admin-Key 判断是否所有者
+  r.get('/me', async (c) => {
+    const admin = await isAdmin(c);
+    return json({ ok: true, role: admin ? 'owner' : null });
   });
 
-  // 榜单列表(任何人都可看)
+  // 榜单列表
   r.get('/boards', async (c) => {
     const data = await db.listBoards(c.env.d1);
     return json({ ok: true, data });
   });
 
-  // 排行�?轮询�?15s 缓存)
+  // 排行榜(15s 缓存)
   r.get('/ranking', async (c) => {
     const board = parseInt(c.req.query('board') || '1', 10);
     const sort = c.req.query('sort') || 'rating';
@@ -63,7 +62,7 @@ export default function publicRoutes() {
     }
   });
 
-  // 用户评级(必须已点�?
+  // 用户评级(必须已点赞)
   r.post('/cards/:id/rate', async (c) => {
     const { fingerprint, rating } = await c.req.json().catch(() => ({}));
     if (!fingerprint) return json({ ok: false, err: 'no_fp' }, 400);

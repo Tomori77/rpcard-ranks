@@ -1,27 +1,20 @@
-// 中间件:会话解析 + 角色守卫
+// 中间件:ADMIN_KEY 校验(Octopus 式,无 cookie 无 session)
+// 前端把 ADMIN_KEY 存 localStorage,每次请求通过 X-Admin-Key header 带上
 
-import { verifySession } from './core/crypto.js';
-import { parseCookies, json } from './core/http.js';
+import { safeEqual } from './core/crypto.js';
+import { json } from './core/http.js';
 
-// 解析 cookie → c.set('session', payload | null)
-export const sessionMiddleware = async (c, next) => {
-  const cookies = parseCookies(c.req.raw);
-  let session = null;
-  if (cookies.session) {
-    session = await verifySession(cookies.session, c.env.SESSION_SECRET);
-  }
-  c.set('session', session);
+// 校验 X-Admin-Key header vs env.ADMIN_KEY
+export const requireAdmin = async (c, next) => {
+  if (!c.env.ADMIN_KEY) return json({ ok: false, err: 'admin_key_not_configured' }, 503);
+  const provided = c.req.header('X-Admin-Key') || '';
+  if (!(await safeEqual(provided, c.env.ADMIN_KEY))) return json({ ok: false, err: 'unauthorized' }, 401);
   await next();
 };
 
-// 角色守卫:requireRole('admin','owner') 返回中间件函数
-// 失败返 403 JSON
-export const requireRole = (...roles) => async (c, next) => {
-  const s = c.get('session');
-  if (!s || !roles.includes(s.role)) return json({ ok: false, err: 'forbidden' }, 403);
-  await next();
-};
-
-// 便捷:从当前 session 取 uid
-export const uidOf = (c) => c.get('session')?.uid || null;
-export const roleOf = (c) => c.get('session')?.role || null;
+// 给前端 /api/me 用的检查:返回 boolean(不阻断请求)
+export async function isAdmin(c) {
+  if (!c.env.ADMIN_KEY) return false;
+  const provided = c.req.header('X-Admin-Key') || '';
+  return safeEqual(provided, c.env.ADMIN_KEY);
+}

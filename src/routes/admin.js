@@ -1,23 +1,22 @@
-// 所有者管理 API:全部卡片 + 榜单 CRUD(单所有者模式,无邀请码无用户管理)
+// 所有者管理 API:全部卡片 + 榜单 CRUD
 
 import { Hono } from 'hono';
 import { json } from '../core/http.js';
 import * as db from '../core/db.js';
 import { bustRanking } from '../core/cache.js';
-import { sessionMiddleware, requireRole } from '../middleware.js';
+import { requireAdmin } from '../middleware.js';
 
 export default function adminRoutes() {
   const r = new Hono();
-  r.use('*', sessionMiddleware);
-  r.use('*', requireRole('owner'));
+  r.use('*', requireAdmin);
 
-  // ============ 全部卡片 ============
+  // 全部卡片
   r.get('/admin/cards', async (c) => {
     const data = await db.listAllCards(c.env.d1);
     return json({ ok: true, data });
   });
 
-  // ============ 榜单 CRUD ============
+  // 榜单 CRUD
   r.post('/admin/boards', async (c) => {
     const { name, sort_order } = await c.req.json();
     if (!name) return json({ ok: false, err: 'missing' }, 400);

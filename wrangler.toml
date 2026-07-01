@@ -22,7 +22,6 @@ id = "5e3e004ddae9469fb616f4bcac9161e0"
 binding = "r2"
 bucket_name = "rankr2"
 
-# 所有者后台密码与会话密钥请在 Cloudflare Dashboard → Worker → Settings →
+# 后台管理密钥请在 Cloudflare Dashboard → Worker → Settings →
 # Variables and Secrets 中配置 Secret 类型:
-#   OWNER_PASSWORD   所有者应急登录密码
-#   SESSION_SECRET   会话签名密钥(随机长字符串)
+#   ADMIN_KEY  后台登录密钥(访问 /admin 输入此值进入后台)
