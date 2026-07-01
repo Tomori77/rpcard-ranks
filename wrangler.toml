@@ -2,25 +2,27 @@ name = "rpcard-ranks"
 main = "src/index.js"
 compatibility_date = "2024-10-01"
 compatibility_flags = ["nodejs_compat"]
-keep_vars = true
 
 [observability]
 enabled = true
 
-#[[d1_databases]]
-#binding = "DB"          #d1数据库绑定名默认不可修改
-#database_name = ""     #d1数据库名字
-#database_id = ""       #d1数据库id
+# D1 数据库(绑定名 d1)
+[[d1_databases]]
+binding = "d1"
+database_name = "rank1"
+database_id = "0903db6f-af56-40e6-a4d4-edd542fc7568"
 
-#[[kv_namespaces]]
-#binding = "CACHE"       #kv绑定名默认不可修改
-#id = ""                #kv命名空间id
+# KV 缓存(绑定名 kv)
+[[kv_namespaces]]
+binding = "kv"
+id = "5e3e004ddae9469fb616f4bcac9161e0"
 
-#[[r2_buckets]]
-#binding = "IMAGES"      #r2对象存储绑定名默认不可修改
-#bucket_name = ""        #r2对象存储桶的名字
+# R2 图片存储(绑定名 r2)
+[[r2_buckets]]
+binding = "r2"
+bucket_name = "rankr2"
 
-# 所有 D1 / KV / R2 绑定与密钥(OWNER_PASSWORD、SESSION_SECRET)请在
-# Cloudflare Dashboard → Worker → Settings → Bindings / Variables and Secrets
-# 中配置,避免将资源 ID 与密钥提交至仓库。
-# keep_vars = true 已启用,面板配置不会被 wrangler deploy 覆盖。
+# 所有者后台密码与会话密钥请在 Cloudflare Dashboard → Worker → Settings →
+# Variables and Secrets 中配置 Secret 类型:
+#   OWNER_PASSWORD   所有者应急登录密码
+#   SESSION_SECRET   会话签名密钥(随机长字符串)

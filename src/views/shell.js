@@ -3,9 +3,6 @@
 
 import { renderHome } from './pages/home.js';
 import { renderCard } from './pages/card.js';
-import { renderRegister } from './pages/register.js';
-import { renderLogin } from './pages/login.js';
-import { renderEmergency } from './pages/emergency.js';
 import { renderAdmin } from './pages/admin.js';
 
 const FP_CDN = `<script src="https://openfpcdn.io/fingerprintjs/v4"></script>`;
@@ -161,11 +158,6 @@ window.toast = (msg, ms=2000) => {
   const t = document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t);
   setTimeout(()=>t.remove(), ms);
 };
-// 错误弹窗:优先显示中文映射,失败时附原始 err code 便于诊断
-window.alertErr = (map, err, prefix='操作失败') => {
-  const zh = map[err] || err || '未知错误';
-  alert(prefix + '\\n\\n' + zh + (err && !map[err] ? '' : (err ? '\\n[err: ' + err + ']' : '')));
-};
 window.imgUrl = (key) => '/api/img?key=' + encodeURIComponent(key);
 window.esc = (s) => String(s==null?'':s).replace(/</g,'&lt;');
 window.refreshWhoami = async () => {
@@ -193,8 +185,6 @@ function shell(title, body, script = '') {
 <div class="brand">RP卡榜</div>
 <nav>
   <a href="/" data-page="home">排行</a>
-  <a href="/login" data-page="login">登录</a>
-  <a href="/admin" data-page="admin">后台</a>
 </nav>
 <div class="right" id="whoami"></div>
 </header><main>${body}</main>
@@ -206,13 +196,10 @@ function shell(title, body, script = '') {
 export function render(page, opts = {}) {
   let p;
   switch (page) {
-    case 'home':      p = renderHome(opts); break;
-    case 'card':      p = renderCard(opts); break;
-    case 'register':  p = renderRegister(opts); break;
-    case 'login':     p = renderLogin(opts); break;
-    case 'emergency': p = renderEmergency(opts); break;
-    case 'admin':     p = renderAdmin(opts); break;
-    default:          p = { title: '404', body: '<p>页面不存在</p>', script: '' };
+    case 'home':  p = renderHome(opts); break;
+    case 'card':  p = renderCard(opts); break;
+    case 'admin': p = renderAdmin(opts); break;
+    default:      p = { title: '404', body: '<p>页面不存在</p>', script: '' };
   }
   return shell(p.title, p.body, p.script);
 }

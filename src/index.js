@@ -1,5 +1,5 @@
-// 入口:装配 Hono app,挂载所有路由 + 页面
-// 路由层全部独立模块,本文件只做胶水
+// 入口:装配 Hono app,挂载路由 + 页面
+// 单所有者模式:对外只有排行榜,后台入口隐藏在 /admin
 
 import { Hono } from 'hono';
 import { sessionMiddleware } from './middleware.js';
@@ -13,7 +13,7 @@ import adminRoutes from './routes/admin.js';
 
 const app = new Hono();
 
-// 全局 session 解析(所有路由共享)
+// 全局 session 解析
 app.use('*', sessionMiddleware);
 
 // API 子路由
@@ -22,14 +22,12 @@ app.route('/api', authRoutes());
 app.route('/api', workspaceRoutes());
 app.route('/api', adminRoutes());
 
-// 页面路由(只返回 HTML)
+// 公开页面:首页 + 卡片详情
 app.get('/', (c) => html(render('home')));
 app.get('/card/:id', (c) => html(render('card', { id: c.req.param('id') })));
-app.get('/register', (c) => html(render('register', { presetCode: c.req.query('code') || '' })));
-app.get('/login', (c) => html(render('login', { next: c.req.query('next') || '/admin' })));
-app.get('/emergency', (c) => html(render('emergency')));
+
+// 隐藏后台入口:未登录显示登录表单,登录后显示后台
 app.get('/admin', (c) => html(render('admin')));
-app.get('/workspace', (c) => c.redirect('/admin')); // 兼容旧链接
 
 export default {
   fetch(request, env, ctx) {
