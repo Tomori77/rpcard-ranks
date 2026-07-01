@@ -16,3 +16,14 @@ export const bustRanking = async (kv) => {
   const list = await kv.list({ prefix: 'rank:' });
   await Promise.all((list.keys || []).map(k => kv.delete(k.name)));
 };
+
+// ============ 评论预设(单条 KV 文本) ============
+const PRESET_KEY = 'review_preset';
+
+export const getReviewPreset = async (kv) => {
+  return (await kv.get(PRESET_KEY)) || '';
+};
+
+export const setReviewPreset = async (kv, content) => {
+  await kv.put(PRESET_KEY, content);
+};
